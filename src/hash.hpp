@@ -9,6 +9,11 @@
 #include <vector>
 #include <iomanip>
 #include <sodium.h>
+#include "vault_handler.hpp"
+
+constexpr int TAG_SIZE = crypto_aead_chacha20poly1305_ietf_ABYTES;
+constexpr int HASH_SIZE = crypto_pwhash_STRBYTES;
+constexpr int NONCE_SIZE = crypto_aead_chacha20poly1305_ietf_NPUBBYTES;
 
 //string <- char*
 std::string argon2id_Hash(std::string passwd) {
@@ -41,6 +46,76 @@ int argon2id_Verifier(std::string hash) {
    return 0;
 }
 
+/**
+ * @brief Generate a symmetric key from a password using Argon2id
+ *
+ * @param password Input password
+ * @param salt Salt value used in key derivation
+ * @param key Output buffer for the derived key
+ * @return true if key derivation is successful
+ * @return false if key derivation fails
+ */
+bool derive_key_from_password(
+   const std::string &password,
+   const unsigned char *salt,
+   unsigned char key[crypto_secretbox_KEYBYTES]) {
+
+   if (crypto_pwhash(
+      key, crypto_secretbox_KEYBYTES,
+      password.c_str(), password.size(),
+      reinterpret_cast<const unsigned char *>(salt),
+      crypto_pwhash_OPSLIMIT_MODERATE,
+      crypto_pwhash_MEMLIMIT_MODERATE,
+      crypto_pwhash_ALG_ARGON2ID13) != 0) {
+      std::cerr << "Key derivation failed (out of memory?)" << std::endl;
+      return false;
+   }
+   return true;
+}
+
+void encrypt_data(
+   const unsigned char *key,
+   const std::string &plaintext,
+   std::vector<unsigned char> &enc_entry) {
+
+
+   unsigned char ciphertext[ENTRY_SIZE + TAG_SIZE];
+   unsigned long long ciphertext_len;
+
+   unsigned char nonce[NONCE_SIZE];
+   randombytes(nonce, NONCE_SIZE);
+
+   crypto_aead_chacha20poly1305_ietf_encrypt(
+      ciphertext, &ciphertext_len,
+      reinterpret_cast<const unsigned char *>(plaintext.data()), plaintext.length(),
+      nullptr, 0,
+      nullptr,
+      nonce,
+      key);
+
+   // enc_entry = nonce + ciphertext
+}
+
+void decrypt_data(
+   const unsigned char *key,
+   unsigned char *plaintext,
+   unsigned long long *plaintext_len,
+   const unsigned char *ciphertext,
+   const unsigned long long ciphertext_len,
+   unsigned char nonce[NONCE_SIZE]) {
+
+   crypto_aead_chacha20poly1305_decrypt(
+      plaintext, plaintext_len,
+      nullptr,
+      ciphertext, ciphertext_len,
+      nullptr, 0,
+      nonce,
+      key
+   );
+
+}
+
+// we don't use this anymore but keep it for reference, just in case xD.
 /**
  * @brief Returns sha3_256 hash of the input string
  *

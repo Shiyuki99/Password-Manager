@@ -87,6 +87,7 @@ private:
 };
 
 int main(int argc, char **argv) {
-   Start start;
+   //Start start;
+   std::cout << argon2id_hash("Hello") << std::endl;
    return 0;
 }

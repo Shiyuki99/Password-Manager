@@ -2,8 +2,8 @@
 
 #include <string>
 #include <filesystem>
+#include <cstdio>
 #include "hash.hpp"
-
 
 
 
@@ -32,12 +32,13 @@ public:
 
 
 private:
-   static const int keySize = 64;
+   static const int keySize = 99;
+   static const int HEADER_SIZE = 128;
    std::string key[keySize];
    /**
     * @brief Open passwords database
     *
-    * @return true Database opened successfuly
+    * @return true Database opened successfully
     * @return false Error while trying to open Database:(
     */
    bool Open_Database() {
@@ -46,18 +47,19 @@ private:
       std::string path;
       std::cin >> path;
 
-      std::FILE *file = std::fopen(path.c_str(), "rb");
+      std::FILE *file = fopen(path.c_str(), "rb");
       if (!file) {
          std::cerr << "FAILED TO OPEN FILE AT PATH: " << path << std::endl;
          return false;
       }
-      char *buffer = (char *)std::malloc(keySize);
+      char *buffer = (char *)malloc(keySize);
       if (!buffer) {
          std::cerr << "FAILED TO ALLOCATE BUFFER!" << std::endl;
          fclose(file);
          return false;
       }
-      auto bytesRead = std::fread(buffer, 1, keySize, file);
+      Read_Header(file);
+      auto bytesRead = fread(buffer, 1, keySize, file);
       if (bytesRead != keySize) {
          std::cerr << "BYTES READ WENT WRONG" << std::endl;
          std::cerr << "EXPECTED: " << keySize << " READ: " << bytesRead << std::endl;
@@ -66,28 +68,22 @@ private:
          return false;
       }
 
-      std::cout << "Please Enter Database Password: ";
-      std::string password;
-      std::cin >> password;
+      if (argon2id_Verifier(buffer))
+         return 0;
 
-      auto hashed_password = hash_sha3_256(password);
-      for (auto i = 0; i < keySize; i++) {
-         if (hashed_password[i] != *(buffer + i)) {
-            std::cout << "Wrong Password!" << std::endl;
-            free(buffer);
-            fclose(file);
-            return false;
-         }
-      }
       std::cout << "Open success:D" << std::endl;
+
+      fseek(file, 1, 0);
       std::fclose(file);
       free(buffer);
+
+
       return true;
    }
 };
 
 int main(int argc, char **argv) {
-   //Start start;
-   std::cout << argon2id_hash("Hello") << std::endl;
+   Start start;
+   //std::cout << argon2id_hash("Hello") << std::endl;
    return 0;
 }

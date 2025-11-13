@@ -11,7 +11,7 @@
 #include <sodium.h>
 
 //string <- char*
-std::string argon2id_hash(std::string passwd) {
+std::string argon2id_Hash(std::string passwd) {
    char argon2id[crypto_pwhash_STRBYTES];
    if (crypto_pwhash_argon2id_str(
       argon2id,
@@ -24,7 +24,7 @@ std::string argon2id_hash(std::string passwd) {
    return output;
 }
 
-int argon2id_verifier(std::string hash) {
+int argon2id_Verifier(std::string hash) {
    std::string passwd = "";
 
    std::cout << "Please Enter The Password: ";

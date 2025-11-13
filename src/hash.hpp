@@ -80,10 +80,10 @@ void encrypt_data(
 
 
    unsigned char ciphertext[ENTRY_SIZE + TAG_SIZE];
-   unsigned long long ciphertext_len;
+   unsigned long long ciphertext_len = 0;
 
    unsigned char nonce[NONCE_SIZE];
-   randombytes(nonce, NONCE_SIZE);
+   randombytes_buf(nonce, NONCE_SIZE);
 
    crypto_aead_chacha20poly1305_ietf_encrypt(
       ciphertext, &ciphertext_len,
@@ -93,7 +93,13 @@ void encrypt_data(
       nonce,
       key);
 
-   // enc_entry = nonce + ciphertext
+   if (ciphertext_len > sizeof(ciphertext)) {
+      throw std::runtime_error("Ciphertext too long for buffer");
+   }
+
+   enc_entry.clear();
+   enc_entry.insert(enc_entry.end(), nonce, nonce + sizeof(nonce));
+   enc_entry.insert(enc_entry.end(), ciphertext, ciphertext + ciphertext_len);
 }
 
 void decrypt_data(

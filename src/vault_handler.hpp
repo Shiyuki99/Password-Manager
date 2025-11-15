@@ -1,22 +1,12 @@
 #ifndef VAULT_HANDLER
 #define VAULT_HANDLER
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <vector>
-#include <chrono>
-#include <fstream>
+
 #include "hash.hpp"
 #include "utils.hpp"
 
-constexpr int SIGNATURE_SIZE = 8;
-constexpr int VERSION_SIZE = 8;
-constexpr int NAME_SIZE = 32;
-constexpr int PASSWORD_SIZE = 32;
-constexpr int SALT_SIZE = crypto_pwhash_SALTBYTES;
-constexpr int HEADER_SIZE = 128;
-constexpr int ENTRY_SIZE = 256;
+
+
 
 /**
  * @brief Store vault header metadata
@@ -116,20 +106,23 @@ public:
             std::cerr << "Only " << file.gcount() << " bytes were read." << std::endl;
             break;
          }
+
          decrypt_data(
             key,
-            reinterpret_cast<unsigned char *>(dec_entries[i].data()),
-            nullptr,
+            entries[0],
             entry_buffer.data(),
-            0,
-            nonce
+            0
          );
+         entries = dec_entries;
       }
-      // Decrypt entries here and store in entries vector
-      // ...
+
    }
 
-   void AddEntry() {}
+   void AddEntry() {
+      file.seekp(std::ios::end);
+      std::string entry;
+      //get_entry(entry);
+   }
 
 
 };

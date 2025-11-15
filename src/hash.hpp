@@ -1,16 +1,10 @@
 #ifndef HASH_HPP
 #define HASH_HPP
 
-#include <openssl/aes.h>
-#include <openssl/evp.h>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <sodium.h>
-#include "vault_handler.hpp"
+#include "stdlib_inc.hpp"
+#include "const.hpp"
 
+constexpr int SALT_SIZE = crypto_pwhash_SALTBYTES;
 constexpr int TAG_SIZE = crypto_aead_chacha20poly1305_ietf_ABYTES;
 constexpr int HASH_SIZE = crypto_pwhash_STRBYTES;
 constexpr int NONCE_SIZE = crypto_aead_chacha20poly1305_ietf_NPUBBYTES;
@@ -73,52 +67,77 @@ bool derive_key_from_password(
    return true;
 }
 
+/**
+ * @brief Encrypt data using ChaCha20-Poly1305
+ *
+ * @param key Symmetric key for encryption
+ * @param plaintext Data to be encrypted
+ * @param out_buff Output buffer for the encrypted data (nonce + ciphertext)
+ */
 void encrypt_data(
    const unsigned char *key,
    const std::string &plaintext,
-   std::vector<unsigned char> &enc_entry) {
-
-
-   unsigned char ciphertext[ENTRY_SIZE + TAG_SIZE];
-   unsigned long long ciphertext_len = 0;
+   std::vector<unsigned char> &out_buff) {
 
    unsigned char nonce[NONCE_SIZE];
-   randombytes_buf(nonce, NONCE_SIZE);
+   randombytes_buf(nonce, sizeof(nonce));
+
+   std::vector<unsigned char> ciphertext(plaintext.size() + TAG_SIZE);
+
+   unsigned long long clen;
 
    crypto_aead_chacha20poly1305_ietf_encrypt(
-      ciphertext, &ciphertext_len,
-      reinterpret_cast<const unsigned char *>(plaintext.data()), plaintext.length(),
+      ciphertext.data(), &clen,
+      (const unsigned char *)plaintext.data(), plaintext.size(),
       nullptr, 0,
       nullptr,
       nonce,
       key);
 
-   if (ciphertext_len > sizeof(ciphertext)) {
-      throw std::runtime_error("Ciphertext too long for buffer");
-   }
+   ciphertext.resize(clen);
 
-   enc_entry.clear();
-   enc_entry.insert(enc_entry.end(), nonce, nonce + sizeof(nonce));
-   enc_entry.insert(enc_entry.end(), ciphertext, ciphertext + ciphertext_len);
+   out_buff.clear();
+   out_buff.insert(out_buff.end(), nonce, nonce + sizeof(nonce));
+   out_buff.insert(out_buff.end(), ciphertext.begin(), ciphertext.end());
 }
 
+
+/**
+ * @brief Decrypt data using ChaCha20-Poly1305
+ *
+ * @param key Symmetric key for decryption
+ * @param out_buff Output buffer for the decrypted data
+ * @param cipher Input buffer containing nonce + ciphertext
+ * @param cipher_len Length of the input buffer
+ */
 void decrypt_data(
    const unsigned char *key,
-   unsigned char *plaintext,
-   unsigned long long *plaintext_len,
-   const unsigned char *ciphertext,
-   const unsigned long long ciphertext_len,
-   unsigned char nonce[NONCE_SIZE]) {
+   std::string &out_buff,
+   const unsigned char *cipher,
+   unsigned long long cipher_len) {
 
-   crypto_aead_chacha20poly1305_decrypt(
-      plaintext, plaintext_len,
+
+   const unsigned char *nonce = cipher;
+   const unsigned char *c = cipher + NONCE_SIZE;
+
+   unsigned long long clen = cipher_len - NONCE_SIZE;
+
+   std::vector<unsigned char> plaintext(clen); // max possible
+
+   unsigned long long plen;
+
+   if (crypto_aead_chacha20poly1305_ietf_decrypt(
+      plaintext.data(), &plen,
       nullptr,
-      ciphertext, ciphertext_len,
+      c, clen,
       nullptr, 0,
       nonce,
-      key
-   );
+      key) != 0) {
+      throw std::runtime_error("decrypt failed");
+   }
 
+   plaintext.resize(plen);
+   out_buff.assign(plaintext.begin(), plaintext.end());
 }
 
 // we don't use this anymore but keep it for reference, just in case xD.

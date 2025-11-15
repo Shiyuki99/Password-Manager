@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include <string>
-#include <filesystem>
-#include <cstdio>
+#include "stdlib_inc.hpp"
 #include "hash.hpp"
+#include "vault_handler.hpp"
+
 
 
 
@@ -58,7 +58,7 @@ private:
          fclose(file);
          return false;
       }
-      Read_Header(file);
+      //Read_Header(file);
       auto bytesRead = fread(buffer, 1, keySize, file);
       if (bytesRead != keySize) {
          std::cerr << "BYTES READ WENT WRONG" << std::endl;
@@ -83,7 +83,7 @@ private:
 };
 
 int main(int argc, char **argv) {
-   Start start;
+   //Start start;
    //std::cout << argon2id_hash("Hello") << std::endl;
    return 0;
 }

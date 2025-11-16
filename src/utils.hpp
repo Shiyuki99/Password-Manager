@@ -13,11 +13,18 @@ std::string safe_input(size_t max_len) {
    input = input.substr(0, max_len);
    return input;
 }
-auto presets = {
-   "",
-
+const std::vector<std::string> presets = {
+    "abcdefghijklmnopqrstuvwxy",
+    "ABCDEFGHIJKLMNOPQRSTUVWXY",
+    "0123456789",
+    R"(!"#$%&'()*+,-.:;<=>?[\]^_{|}~)",
 };
 
+/**
+ * @brief Struct to represent a vault entry.
+ * Name, Username, Website, Password, Modification Time
+ *
+ */
 typedef struct Entry {
    std::string Name;
    std::string Username;
@@ -25,6 +32,14 @@ typedef struct Entry {
    std::string Password;
    time_t Modf_Time;
 }Entry;
+
+std::string EntryToString(const Entry &e) {
+   return "Name: " + e.Name + " " +
+      "Username: " + e.Username + " " +
+      "Website: " + e.Website + " " +
+      "Password: " + e.Password + " " +
+      "Modified: " + std::to_string(e.Modf_Time);
+}
 
 void Create_Password(std::string &password) {
    std::cout << "Press M to type password manually" << std::endl;
@@ -47,15 +62,15 @@ void Create_Password(std::string &password) {
          '1',
          '2',
          '3',
-         '4',
-         '5' };
+         '4' };
 
       std::vector<unsigned char> char_list = {};
       for (auto i : param) {
          if (!allowed.contains(i))
             std::cout << "Input " << i << " is an invalid input.(will be ignored)" << std::endl;
-         else
-            std::cout << "";
+         else {
+            char_list.emplace_back(presets[i]);
+         }
       }
 
 
@@ -65,10 +80,10 @@ void Create_Password(std::string &password) {
 // entry struct: Name + Username + Email + Website + Password + Modf Date
 void get_entry(Entry &entry) {
 
-   entry.Name = safe_input(64);
-   entry.Username = safe_input(64);
-   entry.Website = safe_input(64);
-   entry.Password = safe_input(64);
+   entry.Name = safe_input(32);
+   entry.Username = safe_input(32);
+   entry.Website = safe_input(32);
+   Create_Password(entry.Password);
 
 }
 #endif

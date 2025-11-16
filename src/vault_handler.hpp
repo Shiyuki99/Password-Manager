@@ -120,8 +120,9 @@ public:
 
    void AddEntry() {
       file.seekp(std::ios::end);
-      std::string entry;
-      //get_entry(entry);
+      Entry entry;
+      get_entry(entry);
+
    }
 
 

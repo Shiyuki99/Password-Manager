@@ -2,17 +2,19 @@
 #define UTILS_HPP
 
 #include "stdlib_inc.hpp"
+#include "json.hpp" // Include JSON library
 
-std::string safe_input(size_t max_len) {
-   std::string input;
-   std::getline(std::cin, input);
-   while (input.size() > max_len) {
-      std::cout << "Input too long! Maximum length is " << max_len << " characters. Please try again: ";
-      std::getline(std::cin, input);
+// Using nlohmann json namespace
+using json = nlohmann::json;
+
+// Safe input function - adapted for JSON interface
+std::string safe_input_json(size_t max_len, const std::string& input) {
+   if (input.size() > max_len) {
+      return input.substr(0, max_len);
    }
-   input = input.substr(0, max_len);
    return input;
 }
+
 const std::vector<std::string> presets = {
     "abcdefghijklmnopqrstuvwxy",
     "ABCDEFGHIJKLMNOPQRSTUVWXY",
@@ -22,7 +24,7 @@ const std::vector<std::string> presets = {
 
 /**
  * @brief Struct to represent a vault entry.
- * Name, Username, Website, Password, Modification Time
+ * Name, Username, Website, Password, Notes, Modification Time
  *
  */
 typedef struct Entry {
@@ -30,8 +32,31 @@ typedef struct Entry {
    std::string Username;
    std::string Website;
    std::string Password;
+   std::string Notes;  // Add Notes field
    time_t Modf_Time;
-}Entry;
+} Entry;
+
+// Convert Entry to JSON
+json EntryToJson(const Entry &e) {
+   return json{
+      {"name", e.Name},
+      {"username", e.Username},
+      {"website", e.Website},
+      {"password", e.Password},  // In real implementation, don't include password in responses
+      {"modf_time", e.Modf_Time}
+   };
+}
+
+// Convert JSON to Entry
+Entry JsonToEntry(const json &j) {
+   Entry e;
+   e.Name = j.value("name", "");
+   e.Username = j.value("username", "");
+   e.Website = j.value("website", "");
+   e.Password = j.value("password", "");
+   e.Modf_Time = j.value("modf_time", time(nullptr));
+   return e;
+}
 
 std::string EntryToString(const Entry &e) {
    return "Name: " + e.Name + " " +
@@ -41,49 +66,93 @@ std::string EntryToString(const Entry &e) {
       "Modified: " + std::to_string(e.Modf_Time);
 }
 
-void Create_Password(std::string &password) {
-   std::cout << "Press M to type password manually" << std::endl;
-   std::cout << "Press G to Generate a password" << std::endl;
-   std::cout << "Press X to Exit" << std::endl;
-   char opt = '\0';
-   std::cin >> opt;
-   if (opt == 'g' || opt == 'G') {
-      std::cout << "Please type all what you want to include from the list: " << std::endl;
-      std::cout << "1- Alphabits [abc...] " << std::endl; // 97 - 122
-      std::cout << "2- Cap Alphabits [ABC...] " << std::endl; // 65-90
-      std::cout << "3- Numbers [0123...] " << std::endl; // 48 - 59
-      std::cout << "4- Special Characters [^&!...] " << std::endl;
-      // 33-47 + 58-64 + 91-96 + 123-127
-      std::cout << "5- Extended ASCII [ùÿ£...] " << std::endl; //
-      std::cout << "Press enter if you want to process with the default set[123]: " << std::endl;
-      std::string param = safe_input(5);
-
-      std::unordered_set<char> allowed = {
-         '1',
-         '2',
-         '3',
-         '4' };
-
-      std::vector<unsigned char> char_list = {};
-      for (auto i : param) {
-         if (!allowed.contains(i))
-            std::cout << "Input " << i << " is an invalid input.(will be ignored)" << std::endl;
-         else {
-            char_list.emplace_back(presets[i]);
+// Create password - adapted for JSON interface
+json Create_Password(const std::string& option, const std::string& param = "") {
+   json result;
+   
+   if (option == "manual" || option == "m" || option == "M") {
+      result["type"] = "manual";
+      result["message"] = "Password will be provided manually";
+   } else if (option == "generate" || option == "g" || option == "G") {
+      result["type"] = "generated";
+      result["message"] = "Password generation requested";
+      
+      // Validate param if provided
+      std::unordered_set<char> allowed = {'1', '2', '3', '4'};
+      std::vector<std::string> char_sets;
+      
+      for (char c : param) {
+         if (allowed.count(c)) {
+            char_sets.push_back(presets[c-'1']); // Assuming presets are in order 1,2,3,4
          }
       }
+      
+      if (char_sets.empty()) {
+         // Default to first three sets
+         for (int i = 0; i < 3; i++) {
+            char_sets.push_back(presets[i]);
+         }
+      }
+      
+      result["char_sets"] = char_sets;
+   } else {
+      result["type"] = "error";
+      result["message"] = "Invalid option. Use 'manual' or 'generate'";
+   }
+   
+   return result;
+}
 
+// Create entry from JSON data
+json CreateEntryFromJson(const json& input_json) {
+   json response;
 
+   try {
+      Entry entry;
+
+      // Extract data from JSON
+      entry.Name = input_json.value("name", "");
+      entry.Username = input_json.value("username", "");
+      entry.Website = input_json.value("website", "");
+      entry.Password = input_json.value("password", "");
+      entry.Modf_Time = input_json.value("modf_time", time(nullptr));
+
+      // Validate required fields
+      if (entry.Name.empty() || entry.Username.empty() || entry.Website.empty() || entry.Password.empty()) {
+         response["success"] = false;
+         response["error"] = "Missing required fields: name, username, website, or password";
+         return response;
+      }
+
+      // Validate field lengths
+      if (entry.Name.length() > 32) {
+         response["success"] = false;
+         response["error"] = "Name too long (max 32 characters)";
+         return response;
+      }
+
+      if (entry.Username.length() > 32) {
+         response["success"] = false;
+         response["error"] = "Username too long (max 32 characters)";
+         return response;
+      }
+
+      if (entry.Website.length() > 32) {
+         response["success"] = false;
+         response["error"] = "Website too long (max 32 characters)";
+         return response;
+      }
+
+      response["success"] = true;
+      response["entry"] = EntryToJson(entry);  // Use the EntryToJson function instead
+      response["message"] = "Entry created successfully";
+
+      return response;
+   } catch (const std::exception& e) {
+      response["success"] = false;
+      response["error"] = std::string("Error creating entry: ") + e.what();
+      return response;
    }
 }
 
-// entry struct: Name + Username + Email + Website + Password + Modf Date
-void get_entry(Entry &entry) {
-
-   entry.Name = safe_input(32);
-   entry.Username = safe_input(32);
-   entry.Website = safe_input(32);
-   Create_Password(entry.Password);
-
-}
 #endif

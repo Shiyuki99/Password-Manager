@@ -1,89 +1,88 @@
 #include <iostream>
-
 #include "stdlib_inc.hpp"
-#include "hash.hpp"
-#include "vault_handler.hpp"
+#include "api_handlers.hpp"
+#include "httplib.h"
 
-
-
-
-class Start {
-
-public:
-   Start() {
-      std::cout << "Hello To Password Manager:" << std::endl;
-      std::cout << "[1] Open Existsing Database." << std::endl;
-      std::cout << "[2] Create New Database." << std::endl;
-      std::cout << "[3] Exit." << std::endl;
-      int mod;
-      std::cin >> mod;
-      switch (mod) {
-      case 1:
-         Open_Database();
-         break;
-      case 2:
-
-      case 3:
-
-      default:
-         std::cout << "Wrong Value FCK OFF!<3" << std::endl;
-      }
-   }
-
-
-private:
-   static const int keySize = 99;
-   static const int HEADER_SIZE = 128;
-   std::string key[keySize];
-   /**
-    * @brief Open passwords database
-    *
-    * @return true Database opened successfully
-    * @return false Error while trying to open Database:(
-    */
-   bool Open_Database() {
-      //code later to open recent databases which a a bit lazy to do
-      std::cout << "Please Enter Database Path: ";
-      std::string path;
-      std::cin >> path;
-
-      std::FILE *file = fopen(path.c_str(), "rb");
-      if (!file) {
-         std::cerr << "FAILED TO OPEN FILE AT PATH: " << path << std::endl;
-         return false;
-      }
-      char *buffer = (char *)malloc(keySize);
-      if (!buffer) {
-         std::cerr << "FAILED TO ALLOCATE BUFFER!" << std::endl;
-         fclose(file);
-         return false;
-      }
-      //Read_Header(file);
-      auto bytesRead = fread(buffer, 1, keySize, file);
-      if (bytesRead != keySize) {
-         std::cerr << "BYTES READ WENT WRONG" << std::endl;
-         std::cerr << "EXPECTED: " << keySize << " READ: " << bytesRead << std::endl;
-         fclose(file);
-         free(buffer);
-         return false;
-      }
-
-      if (argon2id_Verifier(buffer))
-         return 0;
-
-      std::cout << "Open success:D" << std::endl;
-
-      fseek(file, 1, 0);
-      std::fclose(file);
-      free(buffer);
-
-
-      return true;
-   }
-};
+using namespace httplib;
 
 int main(int argc, char **argv) {
-   //Start start;
-   //std::cout << argon2id_hash("Hello") << std::endl;
-   return 0;
+    if (sodium_init() < 0) {
+        std::cerr << "Failed to initialize libsodium" << std::endl;
+        return 1;
+    }
+
+    // Create server instance on port 8080
+    Server svr;
+    ApiHandlers handlers;
+
+    // Serve static files from webui directory
+    svr.set_mount_point("/", "./webui");
+
+    // Set up API routes
+    svr.Post("/api/browse", [&handlers](const Request &req, Response &res) {
+        handlers.handle_browse(req, res);
+        });
+
+    svr.Post("/api/vault/create", [&handlers](const Request &req, Response &res) {
+        handlers.handle_create_vault(req, res);
+        });
+
+    svr.Post("/api/vault/open", [&handlers](const Request &req, Response &res) {
+        handlers.handle_open_vault(req, res);
+        });
+
+    svr.Post("/api/vault/authenticate", [&handlers](const Request &req, Response &res) {
+        handlers.handle_authenticate(req, res);
+        });
+
+    svr.Post("/api/vault/close", [&handlers](const Request &req, Response &res) {
+        handlers.handle_close_vault(req, res);
+        });
+
+    svr.Post("/api/entries/load", [&handlers](const Request &req, Response &res) {
+        handlers.handle_load_data(req, res);
+        });
+
+    svr.Get("/api/entries", [&handlers](const Request &req, Response &res) {
+        handlers.handle_get_entries(req, res);
+        });
+
+    svr.Post("/api/entries/add", [&handlers](const Request &req, Response &res) {
+        handlers.handle_add_entry(req, res);
+        });
+
+    svr.Get("/api/vault/status", [&handlers](const Request &req, Response &res) {
+        handlers.handle_vault_status(req, res);
+        });
+
+    // Handle 404 for the root path to serve index.html
+    svr.Get("/", [](const Request &req, Response &res) {
+        std::ifstream file("./webui/index.html");
+        if (file.is_open()) {
+            std::string content((std::istreambuf_iterator<char>(file)),
+                std::istreambuf_iterator<char>());
+            res.set_content(content, "text/html");
+        } else {
+            res.status = 404;
+            res.set_content("404 Not Found", "text/plain");
+        }
+        });
+
+    // Error handler
+    svr.set_error_handler([](const Request &req, Response &res) {
+        json error_response = {
+            {"success", false},
+            {"error", "Error: " + std::to_string(res.status)},
+            {"path", req.path}
+        };
+        res.set_content(error_response.dump(), "application/json");
+        });
+
+    std::cout << "Starting Password Manager server on port 8080..." << std::endl;
+    std::cout << "Open your browser and go to http://localhost:8080 to access the UI" << std::endl;
+
+    // Start the server
+    svr.listen("0.0.0.0", 8080);
+
+    return 0;
 }

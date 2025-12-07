@@ -80,11 +80,12 @@ bool derive_key_from_password(
 }
 
 /**
- * @brief Encrypt data using ChaCha20-Poly1305
+ * @brief Encrypt data using ChaCha20-Poly1305 with fixed-size output
  *
  * @param key Symmetric key for encryption
  * @param plaintext Data to be encrypted
- * @param out_buff Output buffer for the encrypted data (nonce + ciphertext)
+ * @param out_buff Output buffer for the encrypted data (ENTRY_SIZE bytes total)
+ * @param max_output_size Maximum allowed size for output
  */
 void encrypt_data(
    const unsigned char *key,
@@ -106,20 +107,25 @@ void encrypt_data(
       nonce,
       key);
 
-   ciphertext.resize(clen);
-
+   // Create output buffer with fixed size ENCRYPTED_ENTRY_SIZE
    out_buff.clear();
-   out_buff.insert(out_buff.end(), nonce, nonce + sizeof(nonce));
-   out_buff.insert(out_buff.end(), ciphertext.begin(), ciphertext.end());
+   out_buff.resize(ENCRYPTED_ENTRY_SIZE, 0); // Initialize with zeros
+
+   // Copy nonce first
+   std::copy(nonce, nonce + NONCE_SIZE, out_buff.begin());
+
+   // Then copy ciphertext after nonce
+   std::copy(ciphertext.begin(), ciphertext.begin() + clen, out_buff.begin() + NONCE_SIZE);
+
 }
 
 
 /**
- * @brief Decrypt data using ChaCha20-Poly1305
+ * @brief Decrypt data using ChaCha20-Poly1305 expecting fixed-size input
  *
  * @param key Symmetric key for decryption
  * @param out_buff Output buffer for the decrypted data
- * @param cipher Input buffer containing nonce + ciphertext
+ * @param cipher Input buffer containing nonce + ciphertext (fixed ENTRY_SIZE)
  * @param cipher_len Length of the input buffer
  */
 void decrypt_data(
@@ -129,19 +135,21 @@ void decrypt_data(
    unsigned long long cipher_len) {
 
 
+
    const unsigned char *nonce = cipher;
-   const unsigned char *c = cipher + NONCE_SIZE;
+   const unsigned char *ciphertext = cipher + NONCE_SIZE;
 
-   unsigned long long clen = cipher_len - NONCE_SIZE;
 
-   std::vector<unsigned char> plaintext(clen); // max possible
+
+   // Try to decrypt with the actual ciphertext length
+   std::vector<unsigned char> plaintext(ENTRY_SIZE + NONCE_SIZE); // allocate enough space
 
    unsigned long long plen;
 
    if (crypto_aead_chacha20poly1305_ietf_decrypt(
       plaintext.data(), &plen,
       nullptr,
-      c, clen,
+      ciphertext, cipher_len, // use actual length
       nullptr, 0,
       nonce,
       key) != 0) {

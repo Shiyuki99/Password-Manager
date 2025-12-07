@@ -5,7 +5,7 @@
 
 using namespace httplib;
 
-int main(int argc, char **argv) {
+/* int main(int argc, char **argv) {
     if (sodium_init() < 0) {
         std::cerr << "Failed to initialize libsodium" << std::endl;
         return 1;
@@ -83,6 +83,37 @@ int main(int argc, char **argv) {
 
     // Start the server
     svr.listen("0.0.0.0", 8080);
+
+    return 0;
+} */
+
+int main() {
+    if (sodium_init() < 0) {
+        std::cerr << "Failed to initialize libsodium" << std::endl;
+        return 1;
+    }
+
+    unsigned char key[crypto_secretbox_KEYBYTES]{};
+    randombytes_buf(key, crypto_secretbox_KEYBYTES);
+    Entry test;
+    json entry = EntryToJson(test);
+    std::string chain = entry.dump();
+
+    std::cout << "JSON string size: " << chain.size() << std::endl;
+    std::cout << "JSON content: " << chain << std::endl;
+
+    // Calculate expected encrypted size: NONCE + plaintext + TAG
+    size_t expected_encrypted_size = NONCE_SIZE + chain.size() + TAG_SIZE;
+    std::cout << "Expected encrypted size (NONCE + plaintext + TAG): " << expected_encrypted_size << std::endl;
+    std::cout << "  NONCE_SIZE: " << NONCE_SIZE << std::endl;
+    std::cout << "  TAG_SIZE: " << TAG_SIZE << std::endl;
+
+    std::vector<unsigned char> encrypted{};
+    encrypt_data(key, chain, encrypted);
+
+    std::cout << "Actual encrypted buffer size: " << encrypted.size() << std::endl;
+    std::cout << "Current ENTRY_SIZE constant: " << ENTRY_SIZE << std::endl;
+    std::cout << "Current ENCRYPTED_ENTRY_SIZE constant: " << ENCRYPTED_ENTRY_SIZE << std::endl;
 
     return 0;
 }

@@ -227,7 +227,7 @@ public:
         try {
             json request_data = json::parse(req.body);
 
-            Entry entry = {};
+            Entry entry;
             entry.Name = request_data.value("name", "");
             entry.Username = request_data.value("username", "");
             entry.Password = request_data.value("password", "");

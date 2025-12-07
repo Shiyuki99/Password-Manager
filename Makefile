@@ -1,7 +1,7 @@
 # Makefile for Password Manager
 
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra
+CXXFLAGS = -std=c++23 -Wall -Wextra
 LIBS = -lsodium -lstdc++fs
 SOURCES = src/main.cpp
 TARGET = password_manager

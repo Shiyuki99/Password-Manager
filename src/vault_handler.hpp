@@ -223,9 +223,23 @@ public:
             return response;
          }
 
-         Entry entry;
-         std::memcpy(&entry, decrypted.data(), sizeof(Entry));
-         entries.push_back(entry);
+         // Parse JSON and convert to Entry
+         try {
+            json entry_json = json::parse(decrypted);
+            Entry entry;
+            entry.Name = entry_json.value("name", "");
+            entry.Username = entry_json.value("username", "");
+            entry.Website = entry_json.value("website", "");
+            entry.Password = entry_json.value("password", "");
+            entry.Notes = entry_json.value("notes", "");
+            entry.Modf_Time = entry_json.value("modf_time", (time_t)0);
+            entries.push_back(entry);
+         }
+         catch (const std::exception &e) {
+            response["success"] = false;
+            response["error"] = "Failed to parse entry " + std::to_string(i);
+            return response;
+         }
       }
 
       response["success"] = true;
@@ -248,9 +262,17 @@ public:
          return response;
       }
 
-      std::string plaintext(reinterpret_cast<const char *>(&entry), sizeof(Entry));
+      // Serialize Entry to JSON string
+      json entry_json;
+      entry_json["name"] = entry.Name;
+      entry_json["username"] = entry.Username;
+      entry_json["website"] = entry.Website;
+      entry_json["password"] = entry.Password;
+      entry_json["notes"] = entry.Notes;
+      entry_json["modf_time"] = entry.Modf_Time;
+      std::string plaintext = entry_json.dump();
 
-      std::vector<unsigned char> encrypted;
+      std::vector<unsigned char> encrypted{};
       encrypt_data(key, plaintext, encrypted);
 
       size_t offset = sizeof(VaultHeader) + (header.entries * ENTRY_SIZE);

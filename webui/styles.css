@@ -742,6 +742,7 @@ textarea::placeholder {
 .password-length-slider {
    flex: 1;
    -webkit-appearance: none;
+   appearance: none;
    height: 6px;
    border-radius: 3px;
    background: var(--border);
@@ -750,6 +751,7 @@ textarea::placeholder {
 
 .password-length-slider::-webkit-slider-thumb {
    -webkit-appearance: none;
+   appearance: none;
    width: 20px;
    height: 20px;
    border-radius: 50%;

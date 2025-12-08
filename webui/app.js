@@ -4,6 +4,14 @@ let currentViewEntry = null;
 let browseMode = 'open'; // 'open' or 'create'
 let currentBrowsePath = '';
 
+// Password generator presets
+const PASSWORD_CHARSETS = {
+   lowercase: 'abcdefghijklmnopqrstuvwxyz',
+   uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+   digits: '0123456789',
+   symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+};
+
 // Toast notifications
 function showToast(message, type = 'success') {
    const container = document.getElementById('toastContainer');
@@ -385,14 +393,72 @@ function togglePassword(inputId) {
    input.type = input.type === 'password' ? 'text' : 'password';
 }
 
+// Password Generator Functions
+function updateLengthDisplay() {
+   const slider = document.getElementById('passwordLength');
+   const numInput = document.getElementById('passwordLengthNum');
+   numInput.value = slider.value;
+}
+
+function syncLengthSlider() {
+   const numInput = document.getElementById('passwordLengthNum');
+   const slider = document.getElementById('passwordLength');
+
+   // Clamp value between min and max
+   let value = parseInt(numInput.value);
+   if (isNaN(value) || value < 8) value = 8;
+   if (value > 63) value = 63;
+
+   numInput.value = value;
+   slider.value = value;
+}
+
+function togglePreset(element) {
+   element.classList.toggle('active');
+   const checkbox = element.querySelector('input[type="checkbox"]');
+   checkbox.checked = element.classList.contains('active');
+}
+
+function getSelectedCharsets() {
+   const presets = document.querySelectorAll('.preset-option.active');
+   let charset = '';
+
+   presets.forEach(preset => {
+      const type = preset.dataset.preset;
+      if (PASSWORD_CHARSETS[type]) {
+         charset += PASSWORD_CHARSETS[type];
+      }
+   });
+
+   return charset;
+}
+
 function generatePassword() {
-   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-   let password = '';
-   for (let i = 0; i < 20; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+   const length = parseInt(document.getElementById('passwordLength').value);
+   const charset = getSelectedCharsets();
+
+   if (!charset) {
+      showToast('Please select at least one character set', 'error');
+      return;
    }
+
+   if (length < 8 || length > 63) {
+      showToast('Password length must be between 8 and 63', 'error');
+      return;
+   }
+
+   // Use crypto.getRandomValues for better randomness
+   let password = '';
+   const array = new Uint32Array(length);
+   crypto.getRandomValues(array);
+
+   for (let i = 0; i < length; i++) {
+      password += charset.charAt(array[i] % charset.length);
+   }
+
    document.getElementById('entryPassword').value = password;
-   showToast('Password generated');
+   document.getElementById('entryPassword').type = 'text'; // Show the generated password
+   showToast(`Password generated (${length} chars)`);
 }
 
 function escapeHtml(text) {
@@ -424,4 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
    document.getElementById('authPassword')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') authenticate();
    });
+
+   // Initialize length display
+   updateLengthDisplay();
 });

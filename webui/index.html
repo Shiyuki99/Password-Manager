@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vault Manager</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
         <header class="header">
             <h1>🔐 Vault Manager</h1>
-            <p>Secure password management</p>
+            <p>Secure password management with style</p>
         </header>
 
         <div class="status-bar">
@@ -50,7 +51,7 @@
                         <small class="hint">Enter full path where vault will be saved</small>
                     </div>
                     <button class="btn btn-primary" onclick="createVault()">
-                        Create Vault
+                        ✨ Create Vault
                     </button>
                 </div>
 
@@ -69,7 +70,7 @@
                         <small class="hint">Select file or enter path manually</small>
                     </div>
                     <button class="btn btn-primary" onclick="openVault()">
-                        Open Vault
+                        🔓 Open Vault
                     </button>
                 </div>
 
@@ -86,7 +87,7 @@
                     </div>
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="authenticate()">
-                            Unlock
+                            🔑 Unlock
                         </button>
                         <button class="btn btn-secondary" onclick="closeVault()">
                             Close
@@ -103,16 +104,16 @@
                     </div>
                     <div class="form-group">
                         <button class="btn btn-primary" onclick="openAddModal()">
-                            + Add Entry
+                            ➕ Add Entry
                         </button>
                     </div>
                     <div class="form-group">
                         <button class="btn btn-secondary" onclick="loadEntries()">
-                            Refresh Entries
+                            🔄 Refresh Entries
                         </button>
                     </div>
                     <button class="btn btn-danger" onclick="closeVault()">
-                        Lock Vault
+                        🔒 Lock Vault
                     </button>
                 </div>
             </aside>
@@ -157,8 +158,49 @@
                 <label>Password</label>
                 <div class="password-display">
                     <input type="password" id="entryPassword" placeholder="Password">
-                    <button class="icon-btn" onclick="togglePassword('entryPassword')">👁</button>
-                    <button class="icon-btn" onclick="generatePassword()">🎲</button>
+                    <button class="icon-btn" onclick="togglePassword('entryPassword')" title="Toggle visibility">👁</button>
+                </div>
+                
+                <!-- Password Generator Section -->
+                <div class="password-gen-section">
+                    <div class="password-gen-header">
+                        <span>🎲 Password Generator</span>
+                    </div>
+                    
+                    <div class="password-length-group">
+                        <label>Length:</label>
+                        <input type="range" id="passwordLength" class="password-length-slider" 
+                               min="8" max="63" value="16" oninput="updateLengthDisplay()">
+                        <input type="number" id="passwordLengthNum" min="8" max="63" value="16" 
+                               onchange="syncLengthSlider()">
+                    </div>
+                    
+                    <div class="preset-options">
+                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="lowercase">
+                            <input type="checkbox" checked>
+                            <span class="preset-checkbox"></span>
+                            <span class="preset-label">a-z</span>
+                        </label>
+                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="uppercase">
+                            <input type="checkbox" checked>
+                            <span class="preset-checkbox"></span>
+                            <span class="preset-label">A-Z</span>
+                        </label>
+                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="digits">
+                            <input type="checkbox" checked>
+                            <span class="preset-checkbox"></span>
+                            <span class="preset-label">0-9</span>
+                        </label>
+                        <label class="preset-option" onclick="togglePreset(this)" data-preset="symbols">
+                            <input type="checkbox">
+                            <span class="preset-checkbox"></span>
+                            <span class="preset-label">!@#$%</span>
+                        </label>
+                    </div>
+                    
+                    <button class="generate-btn" onclick="generatePassword()">
+                        🎲 Generate Password
+                    </button>
                 </div>
             </div>
             <div class="form-group">
@@ -170,7 +212,7 @@
                 <input type="text" id="entryNotes" placeholder="Additional notes">
             </div>
             <button class="btn btn-primary" onclick="addEntry()">
-                Save Entry
+                💾 Save Entry
             </button>
         </div>
     </div>
@@ -186,15 +228,15 @@
                 <label>Username</label>
                 <div class="password-display">
                     <div class="password-field" id="viewUsername">-</div>
-                    <button class="icon-btn" onclick="copyToClipboard('viewUsername')">📋</button>
+                    <button class="icon-btn" onclick="copyToClipboard('viewUsername')" title="Copy">📋</button>
                 </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-display">
                     <div class="password-field" id="viewPassword" style="filter: blur(8px);">••••••••</div>
-                    <button class="icon-btn" onclick="toggleViewPassword()">👁</button>
-                    <button class="icon-btn" onclick="copyPassword()">📋</button>
+                    <button class="icon-btn" onclick="toggleViewPassword()" title="Toggle visibility">👁</button>
+                    <button class="icon-btn" onclick="copyPassword()" title="Copy password">📋</button>
                 </div>
             </div>
             <div class="form-group">

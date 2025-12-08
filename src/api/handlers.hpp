@@ -1,18 +1,20 @@
 #ifndef API_HANDLERS_HPP
 #define API_HANDLERS_HPP
 
-#include "vault_handler.hpp"
-#include "httplib.h"
-#include "json.hpp"
+#include "../vault/vault.hpp"
+#include "../lib/httplib.h"
+#include "serializers.hpp"
 #include <dirent.h>
 #include <sys/stat.h>
-#include <cstring>
 
 using json = nlohmann::json;
 
+/**
+ * @brief HTTP API handlers for the password manager
+ */
 class ApiHandlers {
 private:
-    vault_handler vault;
+    Vault vault;
 
 public:
     // List directory contents for file browser
@@ -111,7 +113,7 @@ public:
                 response["success"] = false;
                 response["error"] = "Path and password are required";
             } else {
-                response = vault.Create(path, password, name);
+                response = vault.create(path, password, name);
             }
         }
         catch (const std::exception &e) {
@@ -142,7 +144,7 @@ public:
                 response["success"] = false;
                 response["error"] = "Path is required";
             } else {
-                response = vault.Open(path);
+                response = vault.open(path);
             }
         }
         catch (const std::exception &e) {
@@ -165,7 +167,7 @@ public:
                 response["success"] = false;
                 response["error"] = "Password is required";
             } else {
-                response = vault.Authenticate(password);
+                response = vault.authenticate(password);
             }
         }
         catch (const std::exception &e) {
@@ -177,11 +179,11 @@ public:
     }
 
     // Handle loading vault data
-    void handle_load_data(const httplib::Request &req, httplib::Response &res) {
+    void handle_load_data(const httplib::Request &, httplib::Response &res) {
         json response;
 
         try {
-            response = vault.LoadEntries();
+            response = vault.load_entries();
         }
         catch (const std::exception &e) {
             response["success"] = false;
@@ -192,11 +194,11 @@ public:
     }
 
     // Handle getting entries
-    void handle_get_entries(const httplib::Request &req, httplib::Response &res) {
+    void handle_get_entries(const httplib::Request &, httplib::Response &res) {
         json response;
 
         try {
-            const auto &entries = vault.GetEntries();
+            const auto &entries = vault.get_entries();
             json entries_json = json::array();
 
             for (const auto &entry : entries) {
@@ -228,18 +230,18 @@ public:
             json request_data = json::parse(req.body);
 
             Entry entry;
-            entry.Name = request_data.value("name", "");
-            entry.Username = request_data.value("username", "");
-            entry.Password = request_data.value("password", "");
-            entry.Website = request_data.value("url", "");
-            entry.Notes = request_data.value("notes", "");
+            entry.setName(request_data.value("name", ""));
+            entry.setUsername(request_data.value("username", ""));
+            entry.setPassword(request_data.value("password", ""));
+            entry.setWebsite(request_data.value("url", ""));
+            entry.setNotes(request_data.value("notes", ""));
             entry.Modf_Time = time(nullptr);
 
-            if (entry.Name.empty() || entry.Password.empty()) {
+            if (strlen(entry.Name) == 0 || strlen(entry.Password) == 0) {
                 response["success"] = false;
                 response["error"] = "Name and password are required";
             } else {
-                response = vault.AddEntry(entry);
+                response = vault.add_entry(entry);
             }
         }
         catch (const std::exception &e) {
@@ -251,11 +253,11 @@ public:
     }
 
     // Handle vault close
-    void handle_close_vault(const httplib::Request &req, httplib::Response &res) {
+    void handle_close_vault(const httplib::Request &, httplib::Response &res) {
         json response;
 
         try {
-            response = vault.Close();
+            response = vault.close();
         }
         catch (const std::exception &e) {
             response["success"] = false;
@@ -266,13 +268,13 @@ public:
     }
 
     // Handle vault status check
-    void handle_vault_status(const httplib::Request &req, httplib::Response &res) {
+    void handle_vault_status(const httplib::Request &, httplib::Response &res) {
         json response;
 
         try {
             response["success"] = true;
-            response["is_open"] = vault.IsOpen();
-            response["is_authenticated"] = vault.IsAuthenticated();
+            response["is_open"] = vault.is_open();
+            response["is_authenticated"] = vault.is_authenticated();
         }
         catch (const std::exception &e) {
             response["success"] = false;
@@ -283,4 +285,4 @@ public:
     }
 };
 
-#endif
+#endif // API_HANDLERS_HPP

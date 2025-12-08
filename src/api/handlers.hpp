@@ -267,6 +267,65 @@ public:
         res.set_content(response.dump(), "application/json");
     }
 
+    // Handle delete entry
+    void handle_delete_entry(const httplib::Request &req, httplib::Response &res) {
+        json response;
+
+        try {
+            json request_data = json::parse(req.body);
+            size_t index = request_data.value("index", SIZE_MAX);
+
+            if (index == SIZE_MAX) {
+                response["success"] = false;
+                response["error"] = "Entry index is required";
+            } else {
+                response = vault.delete_entry(index);
+            }
+        }
+        catch (const std::exception &e) {
+            response["success"] = false;
+            response["error"] = std::string("Exception: ") + e.what();
+        }
+
+        res.set_content(response.dump(), "application/json");
+    }
+
+    // Handle modify entry
+    void handle_modify_entry(const httplib::Request &req, httplib::Response &res) {
+        json response;
+
+        try {
+            json request_data = json::parse(req.body);
+            size_t index = request_data.value("index", SIZE_MAX);
+
+            if (index == SIZE_MAX) {
+                response["success"] = false;
+                response["error"] = "Entry index is required";
+            } else {
+                Entry entry;
+                entry.setName(request_data.value("name", ""));
+                entry.setUsername(request_data.value("username", ""));
+                entry.setPassword(request_data.value("password", ""));
+                entry.setWebsite(request_data.value("url", ""));
+                entry.setNotes(request_data.value("notes", ""));
+                entry.Modf_Time = time(nullptr);
+
+                if (strlen(entry.Name) == 0 || strlen(entry.Password) == 0) {
+                    response["success"] = false;
+                    response["error"] = "Name and password are required";
+                } else {
+                    response = vault.modify_entry(index, entry);
+                }
+            }
+        }
+        catch (const std::exception &e) {
+            response["success"] = false;
+            response["error"] = std::string("Exception: ") + e.what();
+        }
+
+        res.set_content(response.dump(), "application/json");
+    }
+
     // Handle vault status check
     void handle_vault_status(const httplib::Request &, httplib::Response &res) {
         json response;

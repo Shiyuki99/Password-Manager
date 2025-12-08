@@ -6,14 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vault Manager</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
         <header class="header">
             <h1>🔐 Vault Manager</h1>
-            <p>Secure password management with style</p>
+            <p>Secure password management</p>
         </header>
 
         <div class="status-bar">
@@ -51,7 +50,7 @@
                         <small class="hint">Enter full path where vault will be saved</small>
                     </div>
                     <button class="btn btn-primary" onclick="createVault()">
-                        ✨ Create Vault
+                        Create Vault
                     </button>
                 </div>
 
@@ -62,15 +61,12 @@
                         <label>Vault File</label>
                         <div class="file-input-group">
                             <input type="text" id="openPath" placeholder="/path/to/vault.shpd">
-                            <button class="icon-btn" onclick="document.getElementById('fileInput').click()"
-                                title="Browse">📁</button>
+                            <button class="icon-btn" onclick="browseOpenPath()" title="Browse">📁</button>
                         </div>
-                        <input type="file" id="fileInput" accept=".shpd" style="display: none;"
-                            onchange="handleFileSelect(event)">
                         <small class="hint">Select file or enter path manually</small>
                     </div>
                     <button class="btn btn-primary" onclick="openVault()">
-                        🔓 Open Vault
+                        Open Vault
                     </button>
                 </div>
 
@@ -87,7 +83,7 @@
                     </div>
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="authenticate()">
-                            🔑 Unlock
+                            Unlock
                         </button>
                         <button class="btn btn-secondary" onclick="closeVault()">
                             Close
@@ -104,16 +100,16 @@
                     </div>
                     <div class="form-group">
                         <button class="btn btn-primary" onclick="openAddModal()">
-                            ➕ Add Entry
+                            + Add Entry
                         </button>
                     </div>
                     <div class="form-group">
                         <button class="btn btn-secondary" onclick="loadEntries()">
-                            🔄 Refresh Entries
+                            Refresh Entries
                         </button>
                     </div>
                     <button class="btn btn-danger" onclick="closeVault()">
-                        🔒 Lock Vault
+                        Lock Vault
                     </button>
                 </div>
             </aside>
@@ -141,77 +137,37 @@
 
     <!-- Add Entry Modal -->
     <div class="modal-overlay" id="addModal">
-        <div class="modal modal-wide">
+        <div class="modal">
             <div class="modal-header">
                 <h3>Add New Entry</h3>
                 <button class="modal-close" onclick="closeModal('addModal')">&times;</button>
             </div>
-
-            <!-- Row 1: Name + Username -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="entryName" placeholder="e.g., Gmail, GitHub">
-                </div>
-                <div class="form-group">
-                    <label>Username / Email</label>
-                    <input type="text" id="entryUsername" placeholder="user@example.com">
-                </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="entryName" placeholder="e.g., Gmail, GitHub">
             </div>
-
-            <!-- Row 2: Password -->
+            <div class="form-group">
+                <label>Username / Email</label>
+                <input type="text" id="entryUsername" placeholder="user@example.com">
+            </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-display">
                     <input type="password" id="entryPassword" placeholder="Password">
-                    <button class="icon-btn" onclick="togglePassword('entryPassword')"
-                        title="Toggle visibility">👁</button>
-                </div>
-
-                <!-- Password Generator Section -->
-                <div class="password-gen-section">
-                    <div class="password-length-group">
-                        <label>Length:</label>
-                        <input type="range" id="passwordLength" class="password-length-slider" min="8" max="63"
-                            value="16" oninput="updateLengthDisplay()">
-                        <input type="number" id="passwordLengthNum" min="8" max="63" value="16"
-                            onchange="syncLengthSlider()">
-                    </div>
-
-                    <!-- Clickable option buttons in a row -->
-                    <div class="preset-buttons">
-                        <button type="button" class="preset-btn active" data-preset="lowercase"
-                            onclick="togglePresetBtn(this)">a-z</button>
-                        <button type="button" class="preset-btn active" data-preset="uppercase"
-                            onclick="togglePresetBtn(this)">A-Z</button>
-                        <button type="button" class="preset-btn active" data-preset="digits"
-                            onclick="togglePresetBtn(this)">0-9</button>
-                        <button type="button" class="preset-btn" data-preset="symbols"
-                            onclick="togglePresetBtn(this)">!@#$</button>
-                        <button type="button" class="preset-btn" data-preset="extended"
-                            onclick="togglePresetBtn(this)">Extended</button>
-                    </div>
-
-                    <button class="generate-btn" onclick="generatePassword()">
-                        🎲 Generate
-                    </button>
+                    <button class="icon-btn" onclick="togglePassword('entryPassword')">👁</button>
+                    <button class="icon-btn" onclick="openGeneratorModal('entryPassword')">🎲</button>
                 </div>
             </div>
-
-            <!-- Row 3: URL -->
             <div class="form-group">
                 <label>URL (optional)</label>
                 <input type="text" id="entryUrl" placeholder="https://example.com">
             </div>
-
-            <!-- Row 4: Notes (big textarea) -->
             <div class="form-group">
                 <label>Notes (optional)</label>
-                <textarea id="entryNotes" placeholder="Additional notes..." rows="4"></textarea>
+                <input type="text" id="entryNotes" placeholder="Additional notes">
             </div>
-
             <button class="btn btn-primary" onclick="addEntry()">
-                💾 Save Entry
+                Save Entry
             </button>
         </div>
     </div>
@@ -227,15 +183,15 @@
                 <label>Username</label>
                 <div class="password-display">
                     <div class="password-field" id="viewUsername">-</div>
-                    <button class="icon-btn" onclick="copyToClipboard('viewUsername')" title="Copy">📋</button>
+                    <button class="icon-btn" onclick="copyToClipboard('viewUsername')">📋</button>
                 </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-display">
                     <div class="password-field" id="viewPassword" style="filter: blur(8px);">••••••••</div>
-                    <button class="icon-btn" onclick="toggleViewPassword()" title="Toggle visibility">👁</button>
-                    <button class="icon-btn" onclick="copyPassword()" title="Copy password">📋</button>
+                    <button class="icon-btn" onclick="toggleViewPassword()">👁</button>
+                    <button class="icon-btn" onclick="copyPassword()">📋</button>
                 </div>
             </div>
             <div class="form-group">
@@ -245,6 +201,108 @@
             <div class="form-group">
                 <label>Notes</label>
                 <div class="password-field" id="viewNotes">-</div>
+            </div>
+            <button class="btn btn-primary" onclick="openEditModalFromView()">
+                Edit Entry
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Entry Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Entry</h3>
+                <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="editEntryName" placeholder="e.g., Gmail, GitHub">
+            </div>
+            <div class="form-group">
+                <label>Username / Email</label>
+                <input type="text" id="editEntryUsername" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="password-display">
+                    <input type="password" id="editEntryPassword" placeholder="Password">
+                    <button class="icon-btn" onclick="togglePassword('editEntryPassword')">👁</button>
+                    <button class="icon-btn" onclick="openGeneratorModal('editEntryPassword')">🎲</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>URL (optional)</label>
+                <input type="text" id="editEntryUrl" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <input type="text" id="editEntryNotes" placeholder="Additional notes">
+            </div>
+            <button class="btn btn-primary" onclick="saveEditEntry()">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Password Generator Modal -->
+    <div class="modal-overlay" id="generatorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Generate Password</h3>
+                <button class="modal-close" onclick="closeModal('generatorModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Password Length: <span id="lengthValue">20</span></label>
+                <input type="range" id="passwordLength" min="8" max="64" value="20" oninput="updateLengthDisplay()">
+            </div>
+            <div class="form-group">
+                <label>Character Types</label>
+                <div class="generator-options">
+                    <button class="gen-option active" id="genUppercase"
+                        onclick="toggleGenOption('genUppercase')">ABC</button>
+                    <button class="gen-option active" id="genLowercase"
+                        onclick="toggleGenOption('genLowercase')">abc</button>
+                    <button class="gen-option active" id="genNumbers"
+                        onclick="toggleGenOption('genNumbers')">123</button>
+                    <button class="gen-option active" id="genSpecial"
+                        onclick="toggleGenOption('genSpecial')">!@#</button>
+                    <button class="gen-option" id="genExtended" onclick="toggleGenOption('genExtended')">±µ¶</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Preview</label>
+                <div class="password-display">
+                    <input type="text" id="generatedPreview" readonly>
+                    <button class="icon-btn" onclick="regeneratePassword()">🔄</button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="applyGeneratedPassword()">Use Password</button>
+                <button class="btn btn-secondary" onclick="closeModal('generatorModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Browser Modal -->
+    <div class="modal-overlay" id="browserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="browserTitle">Select Vault File</h3>
+                <button class="modal-close" onclick="closeModal('browserModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Current Path</label>
+                <div class="password-field" id="currentPath">~</div>
+            </div>
+            <div class="browser-list" id="browserList"></div>
+            <div class="form-group" id="newFileName" style="display: none;">
+                <label>File Name</label>
+                <input type="text" id="newFileNameInput" placeholder="vault.shpd">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="browserSelect" onclick="confirmBrowseSelection()">Open</button>
+                <button class="btn btn-secondary" onclick="closeModal('browserModal')">Cancel</button>
             </div>
         </div>
     </div>

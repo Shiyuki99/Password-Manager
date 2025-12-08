@@ -20,39 +20,47 @@ int main() {
     // Set up API routes
     svr.Post("/api/browse", [&handlers](const Request &req, Response &res) {
         handlers.handle_browse(req, res);
-    });
+        });
 
     svr.Post("/api/vault/create", [&handlers](const Request &req, Response &res) {
         handlers.handle_create_vault(req, res);
-    });
+        });
 
     svr.Post("/api/vault/open", [&handlers](const Request &req, Response &res) {
         handlers.handle_open_vault(req, res);
-    });
+        });
 
     svr.Post("/api/vault/authenticate", [&handlers](const Request &req, Response &res) {
         handlers.handle_authenticate(req, res);
-    });
+        });
 
     svr.Post("/api/vault/close", [&handlers](const Request &req, Response &res) {
         handlers.handle_close_vault(req, res);
-    });
+        });
 
     svr.Post("/api/entries/load", [&handlers](const Request &req, Response &res) {
         handlers.handle_load_data(req, res);
-    });
+        });
 
     svr.Get("/api/entries", [&handlers](const Request &req, Response &res) {
         handlers.handle_get_entries(req, res);
-    });
+        });
 
     svr.Post("/api/entries/add", [&handlers](const Request &req, Response &res) {
         handlers.handle_add_entry(req, res);
-    });
+        });
+
+    svr.Post("/api/entries/delete", [&handlers](const Request &req, Response &res) {
+        handlers.handle_delete_entry(req, res);
+        });
+
+    svr.Post("/api/entries/edit", [&handlers](const Request &req, Response &res) {
+        handlers.handle_modify_entry(req, res);
+        });
 
     svr.Get("/api/vault/status", [&handlers](const Request &req, Response &res) {
         handlers.handle_vault_status(req, res);
-    });
+        });
 
     // Handle root path to serve index.html
     svr.Get("/", [](const Request &, Response &res) {
@@ -65,7 +73,7 @@ int main() {
             res.status = 404;
             res.set_content("404 Not Found", "text/plain");
         }
-    });
+        });
 
     // Error handler
     svr.set_error_handler([](const Request &req, Response &res) {
@@ -75,7 +83,7 @@ int main() {
             {"path", req.path}
         };
         res.set_content(error_response.dump(), "application/json");
-    });
+        });
 
     std::cout << "Starting Password Manager server on port 8080..." << std::endl;
     std::cout << "Open your browser and go to http://localhost:8080 to access the UI" << std::endl;

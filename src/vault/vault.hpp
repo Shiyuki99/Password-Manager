@@ -235,6 +235,108 @@ public:
         return response;
     }
 
+    json modify_entry(size_t index, const Entry &entry) {
+        json response;
+
+        if (!file.is_open()) {
+            response["success"] = false;
+            response["error"] = "No vault is open";
+            return response;
+        }
+
+        if (!authenticated) {
+            response["success"] = false;
+            response["error"] = "Not authenticated";
+            return response;
+        }
+
+        if (index >= header.entries) {
+            response["success"] = false;
+            response["error"] = "Invalid entry index";
+            return response;
+        }
+
+        // Encrypt Entry struct (same as add_entry)
+        std::vector<unsigned char> encrypted{};
+        encrypt_entry(key, entry, encrypted);
+
+        size_t offset = sizeof(VaultHeader) + (index * ENCRYPTED_ENTRY_SIZE);
+        file.seekp(offset);
+        file.write(reinterpret_cast<const char *>(encrypted.data()), encrypted.size());
+
+        header.updated = std::time(nullptr);
+        file.seekp(0);
+        header.write(file);
+        file.flush();
+
+        // Update in-memory entries if loaded
+        if (index < entries.size()) {
+            entries[index] = entry;
+        }
+
+        response["success"] = true;
+        response["entries"] = header.entries;
+        return response;
+    }
+
+    json delete_entry(size_t index) {
+        json response;
+
+        if (!file.is_open()) {
+            response["success"] = false;
+            response["error"] = "No vault is open";
+            return response;
+        }
+
+        if (!authenticated) {
+            response["success"] = false;
+            response["error"] = "Not authenticated";
+            return response;
+        }
+
+        if (index >= header.entries) {
+            response["success"] = false;
+            response["error"] = "Invalid entry index";
+            return response;
+        }
+
+        // Remove from memory vector
+        if (index < entries.size()) {
+            entries.erase(entries.begin() + index);
+        }
+
+        // Shift remaining entries in the file
+        for (size_t i = index; i < header.entries - 1; i++) {
+            size_t src_offset = sizeof(VaultHeader) + ((i + 1) * ENCRYPTED_ENTRY_SIZE);
+            size_t dst_offset = sizeof(VaultHeader) + (i * ENCRYPTED_ENTRY_SIZE);
+
+            // Read the next entry
+            unsigned char buffer[ENCRYPTED_ENTRY_SIZE];
+            file.seekg(src_offset);
+            file.read(reinterpret_cast<char *>(buffer), ENCRYPTED_ENTRY_SIZE);
+
+            // Write it to the current position
+            file.seekp(dst_offset);
+            file.write(reinterpret_cast<const char *>(buffer), ENCRYPTED_ENTRY_SIZE);
+        }
+
+        // Update header
+        header.entries--;
+        header.updated = std::time(nullptr);
+
+        file.seekp(0);
+        header.write(file);
+        file.flush();
+
+        // Truncate file to new size (optional but cleaner)
+        size_t new_size = sizeof(VaultHeader) + (header.entries * ENCRYPTED_ENTRY_SIZE);
+        std::filesystem::resize_file(file_path, new_size);
+
+        response["success"] = true;
+        response["entries"] = header.entries;
+        return response;
+    }
+
     const std::vector<Entry> &get_entries() const { return entries; }
 };
 

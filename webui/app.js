@@ -1,17 +1,9 @@
 const API_BASE = '';
 let currentEntries = [];
 let currentViewEntry = null;
+let currentViewIndex = null;
 let browseMode = 'open'; // 'open' or 'create'
 let currentBrowsePath = '';
-
-// Password generator presets
-const PASSWORD_CHARSETS = {
-   lowercase: 'abcdefghijklmnopqrstuvwxyz',
-   uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-   digits: '0123456789',
-   symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?',
-   extended: '¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ'
-};
 
 // Toast notifications
 function showToast(message, type = 'success') {
@@ -127,6 +119,24 @@ function confirmBrowseSelection() {
    }
 
    closeModal('browserModal');
+}
+
+function browseCreatePath() {
+   openFileBrowser('create');
+}
+
+function handleFileSelect(event) {
+   const file = event.target.files[0];
+   if (file) {
+      // For security reasons, browsers don't give us the full path
+      // So we just use the file name and let user know to use the browser modal
+      document.getElementById('openPath').value = file.name;
+      showToast('Note: Use the folder button for full path selection', 'warning');
+   }
+}
+
+function browseOpenPath() {
+   openFileBrowser('open');
 }
 
 // API calls
@@ -322,7 +332,9 @@ function renderEntries(entries) {
             </div>
             <div class="entry-actions">
                 <button class="icon-btn" onclick="viewEntry(${index})" title="View">👁</button>
+                <button class="icon-btn" onclick="openEditModal(${index})" title="Edit">✏️</button>
                 <button class="icon-btn" onclick="copyEntryPassword(${index})" title="Copy password">📋</button>
+                <button class="icon-btn" onclick="deleteEntry(${index})" title="Delete">🗑️</button>
             </div>
         </div>
     `).join('');
@@ -349,6 +361,7 @@ function closeModal(id) {
 function viewEntry(index) {
    const entry = currentEntries[index];
    currentViewEntry = entry;
+   currentViewIndex = index;
 
    document.getElementById('viewEntryTitle').textContent = entry.name;
    document.getElementById('viewUsername').textContent = entry.username || '-';
@@ -383,6 +396,31 @@ function copyEntryPassword(index) {
    showToast('Password copied');
 }
 
+async function deleteEntry(index) {
+   const entry = currentEntries[index];
+   if (!confirm(`Are you sure you want to delete "${entry.name}"?`)) {
+      return;
+   }
+
+   try {
+      const res = await fetch(`${API_BASE}/api/entries/delete`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ index })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+         showToast('Entry deleted');
+         loadEntries();
+      } else {
+         showToast(data.error, 'error');
+      }
+   } catch (e) {
+      showToast('Failed to delete entry', 'error');
+   }
+}
+
 function copyToClipboard(elementId) {
    const text = document.getElementById(elementId).textContent;
    navigator.clipboard.writeText(text);
@@ -394,70 +432,139 @@ function togglePassword(inputId) {
    input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-// Password Generator Functions
+// Password Generator
+let targetPasswordField = null;
+
+const charSets = {
+   uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+   lowercase: 'abcdefghijklmnopqrstuvwxyz',
+   numbers: '0123456789',
+   special: '!@#$%^&*()_+-=[]{}|;:,.<>?',
+   extended: '±§µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ'
+};
+
+function openGeneratorModal(fieldId) {
+   targetPasswordField = fieldId;
+   document.getElementById('generatorModal').classList.add('active');
+   regeneratePassword();
+}
+
 function updateLengthDisplay() {
-   const slider = document.getElementById('passwordLength');
-   const numInput = document.getElementById('passwordLengthNum');
-   numInput.value = slider.value;
+   const length = document.getElementById('passwordLength').value;
+   document.getElementById('lengthValue').textContent = length;
+   regeneratePassword();
 }
 
-function syncLengthSlider() {
-   const numInput = document.getElementById('passwordLengthNum');
-   const slider = document.getElementById('passwordLength');
-
-   // Clamp value between min and max
-   let value = parseInt(numInput.value);
-   if (isNaN(value) || value < 8) value = 8;
-   if (value > 63) value = 63;
-
-   numInput.value = value;
-   slider.value = value;
-}
-
-// Toggle preset button active state
-function togglePresetBtn(btn) {
+function toggleGenOption(optionId) {
+   const btn = document.getElementById(optionId);
    btn.classList.toggle('active');
+   regeneratePassword();
 }
 
-function getSelectedCharsets() {
-   let charset = '';
+function regeneratePassword() {
+   let chars = '';
 
-   document.querySelectorAll('.preset-btn.active').forEach(btn => {
-      const preset = btn.dataset.preset;
-      if (PASSWORD_CHARSETS[preset]) {
-         charset += PASSWORD_CHARSETS[preset];
-      }
-   });
+   if (document.getElementById('genUppercase').classList.contains('active')) {
+      chars += charSets.uppercase;
+   }
+   if (document.getElementById('genLowercase').classList.contains('active')) {
+      chars += charSets.lowercase;
+   }
+   if (document.getElementById('genNumbers').classList.contains('active')) {
+      chars += charSets.numbers;
+   }
+   if (document.getElementById('genSpecial').classList.contains('active')) {
+      chars += charSets.special;
+   }
+   if (document.getElementById('genExtended').classList.contains('active')) {
+      chars += charSets.extended;
+   }
 
-   return charset;
-}
+   if (chars.length === 0) {
+      document.getElementById('generatedPreview').value = '';
+      return;
+   }
 
-function generatePassword() {
    const length = parseInt(document.getElementById('passwordLength').value);
-   const charset = getSelectedCharsets();
-
-   if (!charset) {
-      showToast('Please select at least one character set', 'error');
-      return;
-   }
-
-   if (length < 8 || length > 63) {
-      showToast('Password length must be between 8 and 63', 'error');
-      return;
-   }
-
-   // Use crypto.getRandomValues for better randomness
    let password = '';
-   const array = new Uint32Array(length);
-   crypto.getRandomValues(array);
-
    for (let i = 0; i < length; i++) {
-      password += charset.charAt(array[i] % charset.length);
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+   }
+   document.getElementById('generatedPreview').value = password;
+}
+
+function applyGeneratedPassword() {
+   const password = document.getElementById('generatedPreview').value;
+   if (password && targetPasswordField) {
+      document.getElementById(targetPasswordField).value = password;
+      showToast('Password applied');
+   }
+   closeModal('generatorModal');
+}
+
+function openEditModalFromView() {
+   closeModal('viewModal');
+
+   // Populate the edit form with current entry data
+   document.getElementById('editEntryName').value = currentViewEntry.name || '';
+   document.getElementById('editEntryUsername').value = currentViewEntry.username || '';
+   document.getElementById('editEntryPassword').value = currentViewEntry.password || '';
+   document.getElementById('editEntryUrl').value = currentViewEntry.url || '';
+   document.getElementById('editEntryNotes').value = currentViewEntry.notes || '';
+
+   document.getElementById('editModal').classList.add('active');
+   document.getElementById('editEntryName').focus();
+}
+
+function openEditModal(index) {
+   const entry = currentEntries[index];
+   currentViewEntry = entry;
+   currentViewIndex = index;
+
+   // Populate the edit form with entry data
+   document.getElementById('editEntryName').value = entry.name || '';
+   document.getElementById('editEntryUsername').value = entry.username || '';
+   document.getElementById('editEntryPassword').value = entry.password || '';
+   document.getElementById('editEntryUrl').value = entry.url || '';
+   document.getElementById('editEntryNotes').value = entry.notes || '';
+
+   document.getElementById('editModal').classList.add('active');
+   document.getElementById('editEntryName').focus();
+}
+
+async function saveEditEntry() {
+   const entry = {
+      index: currentViewIndex,
+      name: document.getElementById('editEntryName').value,
+      username: document.getElementById('editEntryUsername').value,
+      password: document.getElementById('editEntryPassword').value,
+      url: document.getElementById('editEntryUrl').value,
+      notes: document.getElementById('editEntryNotes').value
+   };
+
+   if (!entry.name || !entry.password) {
+      showToast('Name and password are required', 'error');
+      return;
    }
 
-   document.getElementById('entryPassword').value = password;
-   document.getElementById('entryPassword').type = 'text'; // Show the generated password
-   showToast(`Password generated (${length} chars)`);
+   try {
+      const res = await fetch(`${API_BASE}/api/entries/edit`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(entry)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+         showToast('Entry updated');
+         closeModal('editModal');
+         loadEntries();
+      } else {
+         showToast(data.error, 'error');
+      }
+   } catch (e) {
+      showToast('Failed to update entry', 'error');
+   }
 }
 
 function escapeHtml(text) {
@@ -468,6 +575,9 @@ function escapeHtml(text) {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
+   // Close vault on page load to prevent bugs from refresh
+   closeVault();
+
    document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
          document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
@@ -489,7 +599,4 @@ document.addEventListener('DOMContentLoaded', () => {
    document.getElementById('authPassword')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') authenticate();
    });
-
-   // Initialize length display
-   updateLengthDisplay();
 });

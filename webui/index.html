@@ -141,76 +141,75 @@
 
     <!-- Add Entry Modal -->
     <div class="modal-overlay" id="addModal">
-        <div class="modal">
+        <div class="modal modal-wide">
             <div class="modal-header">
                 <h3>Add New Entry</h3>
                 <button class="modal-close" onclick="closeModal('addModal')">&times;</button>
             </div>
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="entryName" placeholder="e.g., Gmail, GitHub">
+
+            <!-- Row 1: Name + Username -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="entryName" placeholder="e.g., Gmail, GitHub">
+                </div>
+                <div class="form-group">
+                    <label>Username / Email</label>
+                    <input type="text" id="entryUsername" placeholder="user@example.com">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Username / Email</label>
-                <input type="text" id="entryUsername" placeholder="user@example.com">
-            </div>
+
+            <!-- Row 2: Password -->
             <div class="form-group">
                 <label>Password</label>
                 <div class="password-display">
                     <input type="password" id="entryPassword" placeholder="Password">
-                    <button class="icon-btn" onclick="togglePassword('entryPassword')" title="Toggle visibility">👁</button>
+                    <button class="icon-btn" onclick="togglePassword('entryPassword')"
+                        title="Toggle visibility">👁</button>
                 </div>
-                
+
                 <!-- Password Generator Section -->
                 <div class="password-gen-section">
-                    <div class="password-gen-header">
-                        <span>🎲 Password Generator</span>
-                    </div>
-                    
                     <div class="password-length-group">
                         <label>Length:</label>
-                        <input type="range" id="passwordLength" class="password-length-slider" 
-                               min="8" max="63" value="16" oninput="updateLengthDisplay()">
-                        <input type="number" id="passwordLengthNum" min="8" max="63" value="16" 
-                               onchange="syncLengthSlider()">
+                        <input type="range" id="passwordLength" class="password-length-slider" min="8" max="63"
+                            value="16" oninput="updateLengthDisplay()">
+                        <input type="number" id="passwordLengthNum" min="8" max="63" value="16"
+                            onchange="syncLengthSlider()">
                     </div>
-                    
-                    <div class="preset-options">
-                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="lowercase">
-                            <input type="checkbox" checked>
-                            <span class="preset-checkbox"></span>
-                            <span class="preset-label">a-z</span>
-                        </label>
-                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="uppercase">
-                            <input type="checkbox" checked>
-                            <span class="preset-checkbox"></span>
-                            <span class="preset-label">A-Z</span>
-                        </label>
-                        <label class="preset-option active" onclick="togglePreset(this)" data-preset="digits">
-                            <input type="checkbox" checked>
-                            <span class="preset-checkbox"></span>
-                            <span class="preset-label">0-9</span>
-                        </label>
-                        <label class="preset-option" onclick="togglePreset(this)" data-preset="symbols">
-                            <input type="checkbox">
-                            <span class="preset-checkbox"></span>
-                            <span class="preset-label">!@#$%</span>
-                        </label>
+
+                    <!-- Clickable option buttons in a row -->
+                    <div class="preset-buttons">
+                        <button type="button" class="preset-btn active" data-preset="lowercase"
+                            onclick="togglePresetBtn(this)">a-z</button>
+                        <button type="button" class="preset-btn active" data-preset="uppercase"
+                            onclick="togglePresetBtn(this)">A-Z</button>
+                        <button type="button" class="preset-btn active" data-preset="digits"
+                            onclick="togglePresetBtn(this)">0-9</button>
+                        <button type="button" class="preset-btn" data-preset="symbols"
+                            onclick="togglePresetBtn(this)">!@#$</button>
+                        <button type="button" class="preset-btn" data-preset="extended"
+                            onclick="togglePresetBtn(this)">Extended</button>
                     </div>
-                    
+
                     <button class="generate-btn" onclick="generatePassword()">
-                        🎲 Generate Password
+                        🎲 Generate
                     </button>
                 </div>
             </div>
+
+            <!-- Row 3: URL -->
             <div class="form-group">
                 <label>URL (optional)</label>
                 <input type="text" id="entryUrl" placeholder="https://example.com">
             </div>
+
+            <!-- Row 4: Notes (big textarea) -->
             <div class="form-group">
                 <label>Notes (optional)</label>
-                <input type="text" id="entryNotes" placeholder="Additional notes">
+                <textarea id="entryNotes" placeholder="Additional notes..." rows="4"></textarea>
             </div>
+
             <button class="btn btn-primary" onclick="addEntry()">
                 💾 Save Entry
             </button>

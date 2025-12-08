@@ -9,7 +9,8 @@ const PASSWORD_CHARSETS = {
    lowercase: 'abcdefghijklmnopqrstuvwxyz',
    uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
    digits: '0123456789',
-   symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+   symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?',
+   extended: '¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ'
 };
 
 // Toast notifications
@@ -413,20 +414,18 @@ function syncLengthSlider() {
    slider.value = value;
 }
 
-function togglePreset(element) {
-   element.classList.toggle('active');
-   const checkbox = element.querySelector('input[type="checkbox"]');
-   checkbox.checked = element.classList.contains('active');
+// Toggle preset button active state
+function togglePresetBtn(btn) {
+   btn.classList.toggle('active');
 }
 
 function getSelectedCharsets() {
-   const presets = document.querySelectorAll('.preset-option.active');
    let charset = '';
 
-   presets.forEach(preset => {
-      const type = preset.dataset.preset;
-      if (PASSWORD_CHARSETS[type]) {
-         charset += PASSWORD_CHARSETS[type];
+   document.querySelectorAll('.preset-btn.active').forEach(btn => {
+      const preset = btn.dataset.preset;
+      if (PASSWORD_CHARSETS[preset]) {
+         charset += PASSWORD_CHARSETS[preset];
       }
    });
 
